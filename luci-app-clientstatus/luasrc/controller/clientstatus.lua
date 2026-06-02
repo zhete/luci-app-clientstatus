@@ -330,13 +330,14 @@ function action_data()
 			local trimmed = line:match("^%s*(.-)%s*$") or line
 			if trimmed ~= "" then
 				-- Fixed-width format from C daemon:
-				-- MAC(17) STATUS(8) DURATION(10) IPv4(16) HOSTNAME(20) CNT(10)
+				-- printf "%-17s  %-8s  %-10s  %-16s  %-20s  %-10s"
+				-- MAC(17) + 2sp + STATUS(8) + 2sp + DURATION(10) + 2sp + IPv4(16) + 2sp + HOSTNAME(20) + 2sp + CNT(10)
 				local mac = trimmed:sub(1, 17):match("^%s*(.-)%s*$")
-				local status = trimmed:sub(18, 25):match("^%s*(.-)%s*$")
-				local duration = trimmed:sub(26, 35):match("^%s*(.-)%s*$")
-				local ipv4 = trimmed:sub(36, 51):match("^%s*(.-)%s*$")
-				local hostname = trimmed:sub(52, 71):match("^%s*(.-)%s*$")
-				local cnt = trimmed:sub(72):match("^%s*(.-)%s*$")
+				local status = trimmed:sub(20, 27):match("^%s*(.-)%s*$")
+				local duration = trimmed:sub(30, 39):match("^%s*(.-)%s*$")
+				local ipv4 = trimmed:sub(42, 57):match("^%s*(.-)%s*$")
+				local hostname = trimmed:sub(60, 79):match("^%s*(.-)%s*$")
+				local cnt = trimmed:sub(82):match("^%s*(.-)%s*$")
 				
 				if valid_mac(mac) and (status == "online" or status == "offline") then
 					if ipv4 == "-" then ipv4 = "" end
