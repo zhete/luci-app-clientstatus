@@ -10,36 +10,37 @@ OUTPUT_FILE="${SCRIPT_DIR}/${PKG_NAME}.tar.gz"
 
 echo "== 清理旧构建目录..."
 rm -rf "${BUILD_DIR}"
-mkdir -p "${BUILD_DIR}"
+mkdir -p "${BUILD_DIR}/${PKG_NAME}"
 
 echo "== 复制文件到构建目录..."
+DEST="${BUILD_DIR}/${PKG_NAME}"
 
 # 1. Controller
 cp "${SCRIPT_DIR}/luci-app-clientstatus/luasrc/controller/clientstatus.lua" \
-   "${BUILD_DIR}/clientstatus.lua"
+   "${DEST}/clientstatus.lua"
 
 # 2. View
 cp "${SCRIPT_DIR}/luci-app-clientstatus/luasrc/view/clientstatus.htm" \
-   "${BUILD_DIR}/clientstatus.htm"
+   "${DEST}/clientstatus.htm"
 
 # 3. Settings (CBI model)
 cp "${SCRIPT_DIR}/luci-app-clientstatus/luasrc/model/cbi/clientstatus/settings.lua" \
-   "${BUILD_DIR}/settings.lua"
+   "${DEST}/settings.lua"
 
 # 4. Config
 cp "${SCRIPT_DIR}/luci-app-clientstatus/root/etc/config/clientstatus" \
-   "${BUILD_DIR}/clientstatus.conf"
+   "${DEST}/clientstatus.conf"
 
 # 5. Init script (from clientstatus directory)
 if [ -f "${SCRIPT_DIR}/clientstatus/files/clientstatus.init" ]; then
     cp "${SCRIPT_DIR}/clientstatus/files/clientstatus.init" \
-       "${BUILD_DIR}/clientstatus.init"
+       "${DEST}/clientstatus.init"
 elif [ -f "${SCRIPT_DIR}/clientstatus/openwrt/files/clientstatus.init" ]; then
     cp "${SCRIPT_DIR}/clientstatus/openwrt/files/clientstatus.init" \
-       "${BUILD_DIR}/clientstatus.init"
+       "${DEST}/clientstatus.init"
 else
     # Create a basic init script
-    cat > "${BUILD_DIR}/clientstatus.init" << 'EOF'
+    cat > "${DEST}/clientstatus.init" << 'EOF'
 #!/bin/sh /etc/rc.common
 # clientstatus init script
 
@@ -64,13 +65,13 @@ fi
 # 6. Main script (clientstatus.sh)
 if [ -f "${SCRIPT_DIR}/clientstatus/files/clientstatus.sh" ]; then
     cp "${SCRIPT_DIR}/clientstatus/files/clientstatus.sh" \
-       "${BUILD_DIR}/clientstatus.sh"
+       "${DEST}/clientstatus.sh"
 elif [ -f "${SCRIPT_DIR}/clientstatus/openwrt/files/clientstatus.sh" ]; then
     cp "${SCRIPT_DIR}/clientstatus/openwrt/files/clientstatus.sh" \
-       "${BUILD_DIR}/clientstatus.sh"
+       "${DEST}/clientstatus.sh"
 else
     # Create a basic clientstatus.sh
-    cat > "${BUILD_DIR}/clientstatus.sh" << 'EOF'
+    cat > "${DEST}/clientstatus.sh" << 'EOF'
 #!/bin/sh
 # clientstatus main script
 
@@ -133,14 +134,14 @@ else
     echo "== 警告: po2lmo 未安装，复制现有 lmo 文件..."
     if [ -f "${SCRIPT_DIR}/luci-app-clientstatus_package/clientstatus.zh-cn.lmo" ]; then
         cp "${SCRIPT_DIR}/luci-app-clientstatus_package/clientstatus.zh-cn.lmo" \
-           "${BUILD_DIR}/clientstatus.zh-cn.lmo"
+           "${DEST}/clientstatus.zh-cn.lmo"
     else
-        touch "${BUILD_DIR}/clientstatus.zh-cn.lmo"
+        touch "${DEST}/clientstatus.zh-cn.lmo"
     fi
 fi
 
 # 8. Install script
-cat > "${BUILD_DIR}/install.sh" << 'EOF'
+cat > "${DEST}/install.sh" << 'EOF'
 #!/bin/sh
 cd "$(dirname "$0")"
 
@@ -212,13 +213,13 @@ esac
 EOF
 
 echo "== 设置权限..."
-chmod +x "${BUILD_DIR}/install.sh"
-chmod +x "${BUILD_DIR}/clientstatus.sh"
-chmod +x "${BUILD_DIR}/clientstatus.init"
+chmod +x "${DEST}/install.sh"
+chmod +x "${DEST}/clientstatus.sh"
+chmod +x "${DEST}/clientstatus.init"
 
 echo "== 创建 tar.gz 包..."
 cd "${BUILD_DIR}"
-tar -czf "${OUTPUT_FILE}" .
+tar -czf "${OUTPUT_FILE}" "${PKG_NAME}/"
 
 echo "== 清理构建目录..."
 cd "${SCRIPT_DIR}"
