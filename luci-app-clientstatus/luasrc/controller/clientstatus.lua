@@ -315,6 +315,8 @@ function action_data()
 	local result = { clients = {}, updated = nil }
 	local f = io.open("/tmp/clientstatus", "r")
 	if not f then
+		-- Fallback: read directly from ARP + DHCP when daemon is not running
+		result = action_data_fallback(blocked_set, hostname_map)
 		luci.http.prepare_content("application/json")
 		luci.http.write_json(result)
 		return
@@ -327,7 +329,8 @@ function action_data()
 		else
 			local trimmed = line:match("^%s*(.-)%s*$") or line
 			if trimmed ~= "" then
-				-- Fixed-width format: MAC(17) STATUS(8) DURATION(10) IPv4(16) HOSTNAME(20) CNT(10)
+				-- Fixed-width format from C daemon:
+				-- MAC(17) STATUS(8) DURATION(10) IPv4(16) HOSTNAME(20) CNT(10)
 				local mac = trimmed:sub(1, 17):match("^%s*(.-)%s*$")
 				local status = trimmed:sub(18, 25):match("^%s*(.-)%s*$")
 				local duration = trimmed:sub(26, 35):match("^%s*(.-)%s*$")
@@ -367,6 +370,92 @@ function action_data()
 	end)
 	luci.http.prepare_content("application/json")
 	luci.http.write_json(result)
+end
+
+-- Fallback: collect clients from ARP + DHCP when /tmp/clientstatus does not exist
+function action_data_fallback(blocked_set, hostname_map)
+	local result = { clients = {}, updated = os.date("%Y-%m-%d %H:%M:%S") }
+
+	-- Read ARP table
+	local arp_clients = {}
+	local af = io.popen("cat /proc/net/arp 2>/dev/null")
+	if af then
+		af:read("*l") -- skip header
+		for line in af:lines() do
+			local parts = {}
+			for p in line:gmatch("%S+") do parts[#parts + 1] = p end
+			if #parts >= 4 and parts[4] ~= "00:00:00:00:00:00" then
+				local mac = parts[4]:upper()
+				if valid_mac(mac) then
+					arp_clients[mac] = {
+						ip = parts[1],
+						device = parts[6] or ""
+					}
+				end
+			end
+		end
+		af:close()
+	end
+
+	-- Read DHCP leases
+	local dhcp_map = {}
+	local df = io.open("/tmp/dhcp.leases", "r")
+	if df then
+		for line in df:lines() do
+			local parts = {}
+			for p in line:gmatch("%S+") do parts[#parts + 1] = p end
+			if #parts >= 4 then
+				local mac = parts[2]:upper()
+				if valid_mac(mac) then
+					dhcp_map[mac] = {
+						ip = parts[3],
+						hostname = parts[4] ~= "*" and parts[4] or ""
+					}
+				end
+			end
+		end
+		df:close()
+	end
+
+	-- Merge: DHCP info + ARP info
+	local merged = {}
+	for mac, info in pairs(dhcp_map) do merged[mac] = info end
+	for mac, info in pairs(arp_clients) do
+		if not merged[mac] then merged[mac] = { ip = info.ip, hostname = "" } end
+	end
+
+	-- Build client list
+	for mac, info in pairs(merged) do
+		local hostname = info.hostname or ""
+		if hostname == "" then hostname = "\226\128\148" end
+		local acl_status = blocked_set[mac] and "Blocked" or "Allowed"
+		local custom_name = hostname_map[mac]
+		local display_name = hostname
+		local is_custom = false
+		if custom_name then display_name = custom_name; is_custom = true end
+
+		-- Determine connection type
+		local nct = "Ethernet"
+		local device = arp_clients[mac] and arp_clients[mac].device or ""
+		if device ~= "" and device ~= "br-lan" then nct = device end
+
+		result.clients[#result.clients + 1] = {
+			mac = mac,
+			status = "online",
+			duration = "-",
+			ipv4 = info.ip or "",
+			hostname = display_name,
+			orig_hostname = hostname,
+			custom = is_custom,
+			nct = nct,
+			acl = acl_status
+		}
+	end
+
+	table.sort(result.clients, function(a, b)
+		return a.mac < b.mac
+	end)
+	return result
 end
 
 function action_toggle_acl()
