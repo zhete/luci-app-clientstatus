@@ -32,6 +32,21 @@ o.default = "30"
 o.datatype = "and(uinteger,min(20))"
 o.rmempty = false
 
+o = s:option(Flag, "enable_speedlimit", translate("Enable Speed Limit"),
+	translate("Enable speed limit functionality for clients."))
+o.default = "0"
+o.rmempty = false
+
+o = s:option(Flag, "enable_traffic", translate("Enable Traffic Statistics"),
+	translate("Enable traffic statistics collection."))
+o.default = "1"
+o.rmempty = false
+
+o = s:option(Value, "traffic_retention", translate("Traffic Data Retention (days)"),
+	translate("How many days to keep traffic data. Default: 30 days."))
+o.default = "30"
+o.datatype = "and(uinteger,min(1),max(365))"
+o.rmempty = false
 
 o = s:option(ListValue, "lan_iface", translate("LAN Interface"),
 	translate("Network interface to scan for clients. Usually br-lan."))

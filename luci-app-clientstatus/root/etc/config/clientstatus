@@ -1,0 +1,13 @@
+config global 'global'
+	option enabled '1'
+	option refresh_interval '30'
+	option lan_iface 'br-lan'
+	option enable_speedlimit '1'
+	option enable_traffic '1'
+	option traffic_retention '30'
+
+# Speed limit configurations
+# config speedlimit
+# 	option mac 'AA:BB:CC:DD:EE:FF'
+# 	option download '1000'
+# 	option upload '500'

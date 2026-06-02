@@ -113,3 +113,57 @@ msgstr "客户端数据已清除"
 
 msgid "No clients found. Waiting..."
 msgstr "未发现客户端"
+
+msgid "Enable Speed Limit"
+msgstr "启用限速功能"
+
+msgid "Enable speed limit functionality for clients."
+msgstr "启用客户端限速功能。"
+
+msgid "Enable Traffic Statistics"
+msgstr "启用流量统计"
+
+msgid "Enable traffic statistics collection."
+msgstr "启用流量统计收集功能。"
+
+msgid "Traffic Data Retention (days)"
+msgstr "流量数据保留天数"
+
+msgid "How many days to keep traffic data. Default: 30 days."
+msgstr "流量数据保留多少天。默认：30天。"
+
+msgid "Speed Limit"
+msgstr "限速"
+
+msgid "Total Traffic"
+msgstr "总流量"
+
+msgid "Unlimited"
+msgstr "不限速"
+
+msgid "Click to set speed limit"
+msgstr "点击设置限速"
+
+msgid "Enter download limit (KB/s, 0 for unlimited):"
+msgstr "输入下载限速（KB/s，0表示不限速）："
+
+msgid "Enter upload limit (KB/s, 0 for unlimited):"
+msgstr "输入上传限速（KB/s，0表示不限速）："
+
+msgid "Speed limit set"
+msgstr "限速已设置"
+
+msgid "Are you sure you want to reset all traffic statistics?"
+msgstr "确定要重置所有流量统计吗？"
+
+msgid "Traffic statistics reset"
+msgstr "流量统计已重置"
+
+msgid "Reset Traffic"
+msgstr "重置流量统计"
+
+msgid "limited"
+msgstr "已限速"
+
+msgid "unlimited"
+msgstr "未限速"

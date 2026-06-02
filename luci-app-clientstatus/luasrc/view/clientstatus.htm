@@ -465,6 +465,8 @@
           <th data-col="speed_down">↓ <%:SPEED%> <span class="sort-arrow">▼</span></th>
           <th data-col="speed_up">↑ <%:SPEED%> <span class="sort-arrow">▼</span></th>
           <th data-col="acl"><%:ACL%> <span class="sort-arrow">▼</span></th>
+          <th data-col="speedlimit"><%:Speed Limit%> <span class="sort-arrow">▼</span></th>
+          <th data-col="traffic"><%:Total Traffic%> <span class="sort-arrow">▼</span></th>
         </tr>
       </thead>
       <tbody id="cs-body">
@@ -483,10 +485,14 @@
 (function() {
   var allClients = [];
   var speedData = {};
+  var speedLimitData = {};
+  var trafficData = {};
   var sortCol = 'status';
   var sortAsc = true;
   var timer = null;
   var speedTimer = null;
+  var trafficTimer = null;
+  var speedLimitTimer = null;
   var lastMtime = -1;
 
   function escapeHtml(s) {
@@ -552,6 +558,15 @@
     return (bps / 1073741824).toFixed(2) + 'GB/s';
   }
 
+  function fmtBytes(bytes) {
+    if (!bytes || bytes <= 0) return '-';
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+    if (bytes < 1073741824) return (bytes / 1048576).toFixed(1) + ' MB';
+    if (bytes < 1099511627776) return (bytes / 1073741824).toFixed(2) + ' GB';
+    return (bytes / 1099511627776).toFixed(2) + ' TB';
+  }
+
   function getVal(c, col) {
     switch (col) {
       case 'status':     return c.status === 'online' ? 0 : 1;
@@ -563,6 +578,12 @@
       case 'acl':        return c.acl === 'Blocked' ? 0 : 1;
       case 'speed_down': return (speedData[c.mac] || {}).rx || 0;
       case 'speed_up':   return (speedData[c.mac] || {}).tx || 0;
+      case 'speedlimit': 
+        var limit = speedLimitData[c.mac];
+        return limit ? (limit.download + limit.upload) : 0;
+      case 'traffic':
+        var traffic = trafficData[c.mac];
+        return traffic ? (traffic.rx + traffic.tx) : 0;
       default: return '';
     }
   }
@@ -642,6 +663,65 @@
     input.addEventListener('blur', function() { setTimeout(finish, 150); });
   }
 
+  function setSpeedLimit(mac, el) {
+    if (el.classList.contains('loading')) return;
+    var currentLimit = speedLimitData[mac] || { download: 0, upload: 0 };
+    var download = prompt('<%:Enter download limit (KB/s, 0 for unlimited):%>', currentLimit.download);
+    if (download === null) return;
+    var upload = prompt('<%:Enter upload limit (KB/s, 0 for unlimited):%>', currentLimit.upload);
+    if (upload === null) return;
+    
+    download = parseInt(download) || 0;
+    upload = parseInt(upload) || 0;
+    
+    el.classList.add('loading');
+    csPost('<%=url("admin/services/clientstatus/speedlimit")%>', { 
+      mac: mac, 
+      download: download, 
+      upload: upload 
+    }, function(resp) {
+      el.classList.remove('loading');
+      if (resp && resp.ok) {
+        showToast(mac + ' → <%:Speed limit set%>', 'success');
+        csFetchSpeedLimit();
+        render();
+      } else {
+        showToast('Error: ' + ((resp && resp.error) || 'request failed'), 'error');
+      }
+    });
+  }
+
+  function csFetchSpeedLimit() {
+    XHR.get('<%=url("admin/services/clientstatus/get_speedlimit")%>', null, function(x, data) {
+      if (data && data.ok && data.limits) {
+        speedLimitData = data.limits;
+        if (allClients.length > 0) render();
+      }
+    });
+  }
+
+  function csFetchTraffic() {
+    XHR.get('<%=url("admin/services/clientstatus/traffic_stats")%>', null, function(x, data) {
+      if (data && data.ok && data.stats) {
+        trafficData = data.stats;
+        if (allClients.length > 0) render();
+      }
+    });
+  }
+
+  function csResetTraffic() {
+    if (!confirm('<%:Are you sure you want to reset all traffic statistics?%>')) return;
+    csPost('<%=url("admin/services/clientstatus/reset_traffic")%>', {}, function(resp) {
+      if (resp && resp.ok) {
+        showToast('<%:Traffic statistics reset%>', 'success');
+        trafficData = {};
+        render();
+      } else {
+        showToast('Error: ' + ((resp && resp.error) || 'request failed'), 'error');
+      }
+    });
+  }
+
   function render() {
     var search    = document.getElementById('cs-search').value.toLowerCase();
     var filter    = document.getElementById('cs-filter').value;
@@ -687,6 +767,18 @@
       html += '<td class="cs-speed cs-speed-down"><span class="cs-cell-label">↓</span><span class="cs-speed-val">' + fmtSpeed(sp.rx) + '</span></td>';
       html += '<td class="cs-speed cs-speed-up"><span class="cs-cell-label">↑</span><span class="cs-speed-val">' + fmtSpeed(sp.tx) + '</span></td>';
       html += '<td><span class="cs-cell-label"><%:ACL%>:</span><span class="cs-acl ' + ac + '" data-mac="' + escapeAttr(c.mac) + '" title="<%:Click to toggle%>">' + al + '</span></td>';
+      
+      // Speed limit cell
+      var limit = speedLimitData[c.mac];
+      var limitText = limit ? ('↓' + fmtSpeed(limit.download * 1024 / 8) + ' ↑' + fmtSpeed(limit.upload * 1024 / 8)) : '<%:Unlimited%>';
+      var limitClass = limit ? 'limited' : 'unlimited';
+      html += '<td><span class="cs-cell-label"><%:Speed Limit%>:</span><span class="cs-speedlimit ' + limitClass + '" data-mac="' + escapeAttr(c.mac) + '" title="<%:Click to set speed limit%>" style="cursor:pointer;">' + limitText + '</span></td>';
+      
+      // Traffic statistics cell
+      var traffic = trafficData[c.mac];
+      var trafficText = traffic ? fmtBytes(traffic.rx + traffic.tx) : '-';
+      html += '<td><span class="cs-cell-label"><%:Total Traffic%>:</span><span class="cs-traffic">' + trafficText + '</span></td>';
+      
       html += '</tr>';
       shown++;
     }
@@ -779,6 +871,8 @@
     }
     var hostEl = e.target.closest('.cs-hostname');
     if (hostEl && !hostEl.classList.contains('editing')) startHostnameEdit(hostEl);
+    var limitEl = e.target.closest('.cs-speedlimit');
+    if (limitEl && !limitEl.classList.contains('loading')) setSpeedLimit(limitEl.getAttribute('data-mac'), limitEl);
   });
 
   var ths = document.querySelectorAll('.cs-table th[data-col]');
@@ -808,16 +902,24 @@
   function stopTimer() { if (timer) { clearInterval(timer); timer = null; } }
   function startSpeedTimer() { stopSpeedTimer(); speedTimer = setInterval(csSpeed, 5000); }
   function stopSpeedTimer() { if (speedTimer) { clearInterval(speedTimer); speedTimer = null; } }
+  function startTrafficTimer() { stopTrafficTimer(); trafficTimer = setInterval(csFetchTraffic, 30000); }
+  function stopTrafficTimer() { if (trafficTimer) { clearInterval(trafficTimer); trafficTimer = null; } }
+  function startSpeedLimitTimer() { stopSpeedLimitTimer(); speedLimitTimer = setInterval(csFetchSpeedLimit, 60000); }
+  function stopSpeedLimitTimer() { if (speedLimitTimer) { clearInterval(speedLimitTimer); speedLimitTimer = null; } }
 
   document.getElementById('cs-autorefresh').addEventListener('change', function() {
-    if (this.checked) { startTimer(); startSpeedTimer(); }
-    else { stopTimer(); stopSpeedTimer(); }
+    if (this.checked) { startTimer(); startSpeedTimer(); startTrafficTimer(); startSpeedLimitTimer(); }
+    else { stopTimer(); stopSpeedTimer(); stopTrafficTimer(); stopSpeedLimitTimer(); }
   });
 
   csCheck();
   csSpeed();
+  csFetchSpeedLimit();
+  csFetchTraffic();
   startTimer();
   startSpeedTimer();
+  startTrafficTimer();
+  startSpeedLimitTimer();
 })();
 </script>
 

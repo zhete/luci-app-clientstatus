@@ -34,6 +34,18 @@ function index()
 
 	entry({"admin", "services", "clientstatus", "reset"},
 	      call("action_reset"), nil)
+
+	entry({"admin", "services", "clientstatus", "speedlimit"},
+	      call("action_speedlimit"), nil).leaf = true
+
+	entry({"admin", "services", "clientstatus", "get_speedlimit"},
+	      call("action_get_speedlimit"), nil)
+
+	entry({"admin", "services", "clientstatus", "traffic_stats"},
+	      call("action_traffic_stats"), nil)
+
+	entry({"admin", "services", "clientstatus", "reset_traffic"},
+	      call("action_reset_traffic"), nil)
 end
 
 function action_main()
@@ -444,4 +456,221 @@ function action_reset()
 	send_usr1()
 	luci.http.prepare_content("application/json")
 	luci.http.write_json({ ok = true })
+end
+
+-- Speed limit functions
+local function get_speed_limit_map()
+	local uci = require("luci.model.uci").cursor()
+	local map = {}
+	uci:foreach("clientstatus", "speedlimit", function(s)
+		if s.mac then
+			map[s.mac:upper()] = {
+				download = tonumber(s.download) or 0,
+				upload = tonumber(s.upload) or 0
+			}
+		end
+	end)
+	return map
+end
+
+function action_speedlimit()
+	local http = require("luci.http")
+	local uci = require("luci.model.uci").cursor()
+	local sys = require("luci.sys")
+	
+	local mac = http.formvalue("mac")
+	local download = http.formvalue("download") or "0"
+	local upload = http.formvalue("upload") or "0"
+	
+	if not mac or mac == "" then
+		http.prepare_content("application/json")
+		http.write_json({ ok = false, error = "missing mac" })
+		return
+	end
+	
+	if not valid_mac(mac) then
+		http.prepare_content("application/json")
+		http.write_json({ ok = false, error = "invalid mac format" })
+		return
+	end
+	
+	mac = mac:upper()
+	download = tonumber(download) or 0
+	upload = tonumber(upload) or 0
+	
+	-- Find existing section
+	local section_id = nil
+	uci:foreach("clientstatus", "speedlimit", function(s)
+		if s.mac and s.mac:upper() == mac then
+			section_id = s[".name"]
+			return false
+		end
+	end)
+	
+	if download > 0 or upload > 0 then
+		if section_id then
+			uci:set("clientstatus", section_id, "download", tostring(download))
+			uci:set("clientstatus", section_id, "upload", tostring(upload))
+		else
+			section_id = uci:add("clientstatus", "speedlimit")
+			uci:set("clientstatus", section_id, "mac", mac)
+			uci:set("clientstatus", section_id, "download", tostring(download))
+			uci:set("clientstatus", section_id, "upload", tostring(upload))
+		end
+		-- Apply tc rules
+		apply_tc_limit(mac, download, upload)
+	else
+		if section_id then
+			uci:delete("clientstatus", section_id)
+		end
+		-- Remove tc rules
+		remove_tc_limit(mac)
+	end
+	
+	uci:save("clientstatus")
+	uci:commit("clientstatus")
+	
+	http.prepare_content("application/json")
+	http.write_json({ 
+		ok = true, 
+		mac = mac, 
+		download = download, 
+		upload = upload 
+	})
+end
+
+function action_get_speedlimit()
+	local http = require("luci.http")
+	local limits = get_speed_limit_map()
+	http.prepare_content("application/json")
+	http.write_json({ ok = true, limits = limits })
+end
+
+-- Traffic statistics functions
+function action_traffic_stats()
+	local http = require("luci.http")
+	local fs = require("nixio.fs")
+	local json = require("luci.jsonc")
+	
+	local stats_file = "/tmp/clientstatus_traffic.json"
+	local stats = {}
+	
+	if fs.access(stats_file) then
+		local content = fs.readfile(stats_file)
+		if content then
+			local ok, data = pcall(json.parse, content)
+			if ok and data then
+				stats = data
+			end
+		end
+	end
+	
+	http.prepare_content("application/json")
+	http.write_json({ ok = true, stats = stats })
+end
+
+function action_reset_traffic()
+	local http = require("luci.http")
+	local fs = require("nixio.fs")
+	
+	local stats_file = "/tmp/clientstatus_traffic.json"
+	fs.unlink(stats_file)
+	
+	http.prepare_content("application/json")
+	http.write_json({ ok = true })
+end
+
+-- Helper function to apply tc limit
+function apply_tc_limit(mac, download, upload)
+	local sys = require("luci.sys")
+	local iface = "br-lan"
+	
+	-- Remove existing rules first
+	remove_tc_limit(mac)
+	
+	-- Get IP for this MAC
+	local ip = nil
+	local f = io.open("/proc/net/arp", "r")
+	if f then
+		for line in f:lines() do
+			local parts = {}
+			for p in line:gmatch("%S+") do parts[#parts+1] = p end
+			if #parts >= 4 and parts[4]:upper() == mac then
+				ip = parts[1]
+				break
+			end
+		end
+		f:close()
+	end
+	
+	if not ip then return end
+	
+	-- Setup tc qdisc if not exists
+	os.execute(string.format("tc qdisc del dev %s root 2>/dev/null", iface))
+	os.execute(string.format("tc qdisc add dev %s root handle 1: htb default 12", iface))
+	
+	-- Create class for download limit
+	if download > 0 then
+		local rate = download .. "kbit"
+		os.execute(string.format(
+			"tc class add dev %s parent 1: classid 1:2 htb rate %s ceil %s 2>/dev/null",
+			iface, rate, rate))
+		os.execute(string.format(
+			"tc filter add dev %s protocol ip parent 1:0 prio 1 handle 3 fw classid 1:2 2>/dev/null",
+			iface))
+	end
+	
+	-- Create class for upload limit
+	if upload > 0 then
+		local rate = upload .. "kbit"
+		os.execute(string.format(
+			"tc class add dev %s parent 1: classid 1:3 htb rate %s ceil %s 2>/dev/null",
+			iface, rate, rate))
+		os.execute(string.format(
+			"tc filter add dev %s protocol ip parent 1:0 prio 1 handle 2 fw classid 1:3 2>/dev/null",
+			iface))
+	end
+	
+	-- Mark packets with iptables
+	if download > 0 then
+		os.execute(string.format(
+			"iptables -t mangle -A POSTROUTING -d %s -j MARK --set-mark 0x3 2>/dev/null",
+			ip))
+	end
+	if upload > 0 then
+		os.execute(string.format(
+			"iptables -t mangle -A PREROUTING -s %s -j MARK --set-mark 0x2 2>/dev/null",
+			ip))
+	end
+end
+
+-- Helper function to remove tc limit
+function remove_tc_limit(mac)
+	local sys = require("luci.sys")
+	local iface = "br-lan"
+	
+	-- Get IP for this MAC
+	local ip = nil
+	local f = io.open("/proc/net/arp", "r")
+	if f then
+		for line in f:lines() do
+			local parts = {}
+			for p in line:gmatch("%S+") do parts[#parts+1] = p end
+			if #parts >= 4 and parts[4]:upper() == mac then
+				ip = parts[1]
+				break
+			end
+		end
+		f:close()
+	end
+	
+	-- Remove iptables rules
+	if ip then
+		os.execute(string.format(
+			"iptables -t mangle -D POSTROUTING -d %s -j MARK --set-mark 0x3 2>/dev/null",
+			ip))
+		os.execute(string.format(
+			"iptables -t mangle -D PREROUTING -s %s -j MARK --set-mark 0x2 2>/dev/null",
+			ip))
+	end
 end
