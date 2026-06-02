@@ -70,59 +70,133 @@ elif [ -f "${SCRIPT_DIR}/clientstatus/openwrt/files/clientstatus.sh" ]; then
     cp "${SCRIPT_DIR}/clientstatus/openwrt/files/clientstatus.sh" \
        "${DEST}/clientstatus.sh"
 else
-    # Create a basic clientstatus.sh
-    cat > "${DEST}/clientstatus.sh" << 'EOF'
+    # Create a clientstatus.sh that outputs the same format as the C daemon
+    cat > "${DEST}/clientstatus.sh" << 'SHELLEOF'
 #!/bin/sh
-# clientstatus main script
+# clientstatus shell daemon — drop-in replacement for clientstatus.c
+# Generates /tmp/clientstatus in the same fixed-width format
 
 CLIENTSTATUS_FILE="/tmp/clientstatus"
+STATE_FILE="/tmp/clientstatus.state"
+PID_FILE="/tmp/clientstatus.pid"
 REFRESH_INTERVAL=30
+
+# Read UCI config
+INTERVAL=$(uci -q get clientstatus.global.refresh_interval 2>/dev/null)
+[ -z "$INTERVAL" ] || [ "$INTERVAL" -lt 5 ] 2>/dev/null && INTERVAL=30
+LAN_IFACE=$(uci -q get clientstatus.global.lan_iface 2>/dev/null)
+[ -z "$LAN_IFACE" ] && LAN_IFACE="br-lan"
 
 log() {
     logger -t "clientstatus" "$1"
 }
 
-scan_clients() {
-    # Scan ARP table and DHCP leases
-    > "$CLIENTSTATUS_FILE"
-    
-    # Read ARP table
-    while read -r line; do
-        set -- $line
-        if [ $# -ge 6 ]; then
-            ip="$1"
-            mac="$4"
-            iface="$6"
-            echo "CLIENT|$mac|$ip|$iface|unknown|0|0|0" >> "$CLIENTSTATUS_FILE"
-        fi
-    done < /proc/net/arp
-    
-    # Update with DHCP info
-    if [ -f /tmp/dhcp.leases ]; then
-        while read -r line; do
-            set -- $line
-            if [ $# -ge 4 ]; then
-                mac="$2"
-                ip="$3"
-                hostname="$4"
-                # Update hostname in clientstatus file
-                sed -i "s/CLIENT|$mac|[^|]*|[^|]*|[^|]*/CLIENT|$mac|$ip|br-lan|$hostname/" "$CLIENTSTATUS_FILE"
-            fi
-        done < /tmp/dhcp.leases
+# Write PID
+echo $$ > "$PID_FILE"
+
+# Signal handler for USR1 (force refresh)
+trap '' USR1
+
+format_duration() {
+    local secs=$1
+    local d=$((secs / 86400))
+    local h=$(( (secs % 86400) / 3600 ))
+    local m=$(( (secs % 3600) / 60 ))
+    local s=$(( secs % 60 ))
+    if [ "$d" -gt 0 ]; then
+        echo "${d}d${h}h"
+    elif [ "$h" -gt 0 ]; then
+        echo "${h}h${m}m"
+    elif [ "$m" -gt 0 ]; then
+        echo "${m}m${s}s"
+    else
+        echo "${s}s"
     fi
 }
 
+scan_clients() {
+    local now=$(date +%s)
+    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+    local tmpfile="${CLIENTSTATUS_FILE}.tmp"
+
+    {
+        echo "# Client Status — ${timestamp}"
+        echo "# Refresh interval: ${INTERVAL}s  |  LAN: ${LAN_IFACE}"
+        echo "# WiFi: disabled"
+        echo "#"
+        printf "# %-17s  %-8s  %-10s  %-16s  %-20s  %-10s\n" "MAC" "STATUS" "DURATION" "IPv4" "HOSTNAME" "CNT"
+        printf "# %-17s  %-8s  %-10s  %-16s  %-20s  %-10s\n" "─────────────────" "────────" "──────────" "────────────────" "────────────────────" "──────────"
+
+        # Read ARP table (skip header line)
+        tail -n +2 /proc/net/arp 2>/dev/null | while read -r _ip _type _flags mac _mask _device; do
+            # Skip incomplete or zero MACs
+            [ -z "$mac" ] && continue
+            mac=$(echo "$mac" | tr 'a-f' 'A-F')
+            [ "$mac" = "00:00:00:00:00:00" ] && continue
+            # Validate MAC format
+            echo "$mac" | grep -qE '^([0-9A-F]{2}:){5}[0-9A-F]{2}$' || continue
+
+            ip="$_ip"
+            device="$_device"
+
+            # Get hostname from DHCP leases
+            hostname=""
+            if [ -f /tmp/dhcp.leases ]; then
+                dhcp_host=$(grep -i "$mac" /tmp/dhcp.leases 2>/dev/null | head -1 | awk '{print $4}')
+                if [ -n "$dhcp_host" ] && [ "$dhcp_host" != "*" ]; then
+                    hostname="$dhcp_host"
+                fi
+            fi
+            [ -z "$hostname" ] && hostname="unknown"
+
+            # Determine connection type
+            conn="Ethernet"
+            if [ "$device" != "$LAN_IFACE" ] && [ -n "$device" ]; then
+                conn="$device"
+            fi
+
+            # Check if online via ping (quick check)
+            status="online"
+            ping -c1 -W1 "$ip" >/dev/null 2>&1 || status="offline"
+
+            # Get duration from state file
+            duration="0s"
+            if [ -f "$STATE_FILE" ]; then
+                old_since=$(grep "^${mac}|" "$STATE_FILE" 2>/dev/null | head -1 | cut -d'|' -f3)
+                if [ -n "$old_since" ] && [ "$old_since" -gt 0 ] 2>/dev/null; then
+                    duration=$(format_duration $(( now - old_since )))
+                fi
+            fi
+
+            # Format: fixed-width fields matching C daemon output
+            printf "%-17s  %-8s  %-10s  %-16s  %-20s  %-10s\n" \
+                "$mac" "$status" "$duration" "$ip" "$hostname" "$conn"
+        done
+    } > "$tmpfile"
+
+    mv -f "$tmpfile" "$CLIENTSTATUS_FILE"
+
+    # Update state file with current timestamps
+    {
+        tail -n +8 "${CLIENTSTATUS_FILE}" 2>/dev/null | while read -r mac status duration ip hostname conn; do
+            [ -z "$mac" ] && continue
+            echo "$mac|online|${now}|${ip}|${hostname}|Ethernet|99|0"
+        done
+    } > "${STATE_FILE}.tmp"
+    mv -f "${STATE_FILE}.tmp" "$STATE_FILE"
+}
+
 main_loop() {
-    log "clientstatus started"
+    log "clientstatus.sh started (interval=${INTERVAL}s, lan=${LAN_IFACE})"
     while true; do
         scan_clients
-        sleep "$REFRESH_INTERVAL"
+        sleep "$INTERVAL"
     done
 }
 
 # Main
 main_loop
-EOF
+SHELLEOF
 fi
 
 # 7. Language file (compile from .po)
