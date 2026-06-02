@@ -367,69 +367,69 @@
       <div class="cs-card-icon blue">📱</div>
       <div class="cs-card-body">
         <div class="cs-card-num" id="cs-total">0</div>
-        <div class="cs-card-label"><%:Total Devices%></div>
+        <div class="cs-card-label">总设备数</div>
       </div>
     </div>
     <div class="cs-card">
       <div class="cs-card-icon purple">📶</div>
       <div class="cs-card-body">
         <div class="cs-card-num" id="cs-wireless">0</div>
-        <div class="cs-card-label"><%:Wireless%></div>
+        <div class="cs-card-label">无线</div>
       </div>
     </div>
     <div class="cs-card">
       <div class="cs-card-icon teal">🔌</div>
       <div class="cs-card-body">
         <div class="cs-card-num" id="cs-ethernet">0</div>
-        <div class="cs-card-label"><%:Ethernet%></div>
+        <div class="cs-card-label">以太网</div>
       </div>
     </div>
     <div class="cs-card">
       <div class="cs-card-icon green">✅</div>
       <div class="cs-card-body">
         <div class="cs-card-num" id="cs-online">0</div>
-        <div class="cs-card-label"><%:Online%></div>
+        <div class="cs-card-label">在线</div>
       </div>
     </div>
     <div class="cs-card">
       <div class="cs-card-icon red">⭕</div>
       <div class="cs-card-body">
         <div class="cs-card-num" id="cs-offline">0</div>
-        <div class="cs-card-label"><%:Offline%></div>
+        <div class="cs-card-label">离线</div>
       </div>
     </div>
     <div class="cs-card">
       <div class="cs-card-icon orange">🚫</div>
       <div class="cs-card-body">
         <div class="cs-card-num" id="cs-blocked">0</div>
-        <div class="cs-card-label"><%:Blocked%></div>
+        <div class="cs-card-label">已阻止</div>
       </div>
     </div>
   </div>
 
   <div class="cs-toolbar">
     <div class="cs-toolbar-left">
-      <input class="cs-search" id="cs-search" type="text" placeholder="<%:Search hostname, IP, MAC...%>">
-      <span class="cs-filter-label"><%:Filter:%></span>
+      <input class="cs-search" id="cs-search" type="text" placeholder="搜索主机名、IP、MAC...">
+      <span class="cs-filter-label">筛选：</span>
       <select class="cs-filter" id="cs-filter">
-        <option value="all"><%:All NCS%></option>
-        <option value="online"><%:Online%></option>
-        <option value="offline"><%:Offline%></option>
+        <option value="all">全部状态</option>
+        <option value="online">在线</option>
+        <option value="offline">离线</option>
       </select>
       <select class="cs-filter" id="cs-acl-filter">
-        <option value="all"><%:All ACL%></option>
-        <option value="Allowed"><%:Allowed%></option>
-        <option value="Blocked"><%:Blocked%></option>
+        <option value="all">全部ACL</option>
+        <option value="Allowed">允许</option>
+        <option value="Blocked">阻止</option>
       </select>
       <select class="cs-filter" id="cs-nct-filter">
-        <option value="all"><%:All NCT%></option>
-        <option value="Wireless"><%:Wireless%></option>
-        <option value="Ethernet"><%:Ethernet%></option>
+        <option value="all">全部类型</option>
+        <option value="Wireless">无线</option>
+        <option value="Ethernet">以太网</option>
       </select>
     </div>
     <div class="cs-actions">
       <label class="cs-auto">
-        <%:Auto refresh%>
+        自动刷新
         <div class="cs-toggle">
           <input type="checkbox" id="cs-autorefresh" checked>
           <div class="cs-toggle-track"></div>
@@ -440,14 +440,14 @@
           <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
           <line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>
         </svg>
-        <%:Reset%>
+        重置
       </button>
       <button class="cs-btn-base cs-refresh-btn" id="cs-refresh" onclick="csFetch()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/>
           <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
         </svg>
-        <%:Refresh%>
+        刷新
       </button>
     </div>
   </div>
@@ -456,15 +456,15 @@
     <table class="cs-table">
       <thead>
         <tr>
-          <th data-col="status" class="sorted"><%:Status%> <span class="sort-arrow">▼</span></th>
-          <th data-col="hostname"><%:Hostname%> <span class="sort-arrow">▼</span></th>
-          <th data-col="mac"><%:MAC%> <span class="sort-arrow">▼</span></th>
-          <th data-col="ipv4"><%:IP%> <span class="sort-arrow">▼</span></th>
-          <th data-col="duration"><%:Duration%> <span class="sort-arrow">▼</span></th>
-          <th data-col="nct"><%:NCT%> <span class="sort-arrow">▼</span></th>
+          <th data-col="status" class="sorted">状态 <span class="sort-arrow">▼</span></th>
+          <th data-col="hostname">主机名 <span class="sort-arrow">▼</span></th>
+          <th data-col="mac">MAC地址 <span class="sort-arrow">▼</span></th>
+          <th data-col="ipv4">IP地址 <span class="sort-arrow">▼</span></th>
+          <th data-col="duration">连接时长 <span class="sort-arrow">▼</span></th>
+          <th data-col="nct">连接类型 <span class="sort-arrow">▼</span></th>
           <th data-col="speed_down">↓ 下载速度 <span class="sort-arrow">▼</span></th>
           <th data-col="speed_up">↑ 上传速度 <span class="sort-arrow">▼</span></th>
-          <th data-col="acl"><%:ACL%> <span class="sort-arrow">▼</span></th>
+          <th data-col="acl">ACL规则 <span class="sort-arrow">▼</span></th>
           <th data-col="speedlimit">限速 <span class="sort-arrow">▼</span></th>
           <th data-col="traffic">总流量 <span class="sort-arrow">▼</span></th>
         </tr>
@@ -474,7 +474,7 @@
     </table>
     <div class="cs-empty" id="cs-empty" style="display:none;">
       <div class="cs-empty-icon">📡</div>
-      <div class="cs-empty-text"><%:No clients found. Waiting...%></div>
+      <div class="cs-empty-text">未发现客户端，等待中...</div>
     </div>
   </div>
 </div>
@@ -607,10 +607,10 @@
     csPost('<%=url("admin/services/clientstatus/toggle_acl")%>', { mac: mac }, function(resp) {
       el.classList.remove('loading');
       if (resp && resp.ok) {
-        showToast(resp.blocked ? mac + ' → <%:Blocked%>' : mac + ' → <%:Allowed%>', 'success');
+        showToast(resp.blocked ? mac + ' → 已阻止' : mac + ' → 已允许', 'success');
         csFetch();
       } else {
-        showToast('Error: ' + ((resp && resp.error) || 'request failed'), 'error');
+        showToast('错误: ' + ((resp && resp.error) || '请求失败'), 'error');
       }
     });
   }
@@ -621,9 +621,9 @@
       hostname: hostname
     }, function(resp) {
       if (resp && resp.ok) {
-        showToast(mac + (hostname ? ' → ' + hostname : ' → <%:Delete%>'), 'success');
+        showToast(mac + (hostname ? ' → ' + hostname : ' → 已删除'), 'success');
       } else {
-        showToast('Error: ' + ((resp && resp.error) || 'request failed'), 'error');
+        showToast('错误: ' + ((resp && resp.error) || '请求失败'), 'error');
       }
       if (callback) callback();
     });
@@ -642,7 +642,7 @@
     input.className = 'cs-hostname-input';
     input.value = currentName;
     input.maxLength = 64;
-    input.placeholder = origName || '<%:Enter hostname%>';
+    input.placeholder = origName || '输入主机名';
     textSpan.style.display = 'none';
     cell.appendChild(input);
     input.focus();
@@ -689,7 +689,7 @@
         csFetchSpeedLimit();
         render();
       } else {
-        showToast('Error: ' + ((resp && resp.error) || 'request failed'), 'error');
+        showToast('错误: ' + ((resp && resp.error) || '请求失败'), 'error');
       }
     });
   }
@@ -720,7 +720,7 @@
         trafficData = {};
         render();
       } else {
-        showToast('Error: ' + ((resp && resp.error) || 'request failed'), 'error');
+        showToast('错误: ' + ((resp && resp.error) || '请求失败'), 'error');
       }
     });
   }
@@ -747,29 +747,29 @@
       if (search && (c.hostname + c.mac + c.ipv4 + (c.nct || '')).toLowerCase().indexOf(search) === -1) continue;
 
       var sc = c.status === 'online' ? 'online' : 'offline';
-      var sl = c.status === 'online' ? '<%:Online%>' : '<%:Offline%>';
+      var sl = c.status === 'online' ? '在线' : '离线';
       var ac = c.acl === 'Blocked' ? 'blocked' : 'allowed';
-      var al = c.acl === 'Blocked' ? '<%:Blocked%>' : '<%:Allowed%>';
+      var al = c.acl === 'Blocked' ? '阻止' : '允许';
       var isWl = isWirelessNct(c.nct);
       var nc = isWl ? 'wireless' : 'ethernet';
-      var nl = isWl ? c.nct : '<%:Ethernet%>';
+      var nl = isWl ? c.nct : '以太网';
       var hostDisplay = escapeHtml(c.hostname);
       var customMark = c.custom ? ' <span class="cs-custom-mark">&#9998;</span>' : '';
       var sp = speedData[c.mac] || { rx: 0, tx: 0 };
 
       html += '<tr data-mac="' + escapeAttr(c.mac) + '">';
       html += '<td><span class="cs-badge ' + sc + '"><span class="cs-badge-dot"></span>' + sl + '</span></td>';
-      html += '<td class="cs-hostname" data-mac="' + escapeAttr(c.mac) + '" data-name="' + escapeAttr(c.hostname) + '" data-orig="' + escapeAttr(c.orig_hostname || '') + '" title="<%:Click to edit%>">';
-      html += '<span class="cs-cell-label"><%:Hostname%>:</span>';
+      html += '<td class="cs-hostname" data-mac="' + escapeAttr(c.mac) + '" data-name="' + escapeAttr(c.hostname) + '" data-orig="' + escapeAttr(c.orig_hostname || '') + '" title="点击编辑">';
+      html += '<span class="cs-cell-label">主机名:</span>';
       html += '<span class="cs-hostname-text">' + hostDisplay + customMark + '</span>';
       html += '</td>';
-      html += '<td class="cs-mac"><span class="cs-cell-label"><%:MAC%>:</span>' + escapeHtml(c.mac) + '</td>';
-      html += '<td class="cs-mono"><span class="cs-cell-label"><%:IP%>:</span>' + (c.status === 'offline' ? '-' : escapeHtml(c.ipv4 || '-')) + '</td>';
-      html += '<td class="cs-duration"><span class="cs-cell-label"><%:Duration%>:</span>' + escapeHtml(c.duration) + '</td>';
-      html += '<td><span class="cs-cell-label"><%:NCT%>:</span>' + ('<span class="cs-nct ' + nc + '">' + escapeHtml(nl) + '</span>') + '</td>';
+      html += '<td class="cs-mac"><span class="cs-cell-label">MAC:</span>' + escapeHtml(c.mac) + '</td>';
+      html += '<td class="cs-mono"><span class="cs-cell-label">IP:</span>' + (c.status === 'offline' ? '-' : escapeHtml(c.ipv4 || '-')) + '</td>';
+      html += '<td class="cs-duration"><span class="cs-cell-label">时长:</span>' + escapeHtml(c.duration) + '</td>';
+      html += '<td><span class="cs-cell-label">类型:</span>' + ('<span class="cs-nct ' + nc + '">' + escapeHtml(nl) + '</span>') + '</td>';
       html += '<td class="cs-speed cs-speed-down"><span class="cs-cell-label">↓</span><span class="cs-speed-val">' + fmtSpeed(sp.rx) + '</span></td>';
       html += '<td class="cs-speed cs-speed-up"><span class="cs-cell-label">↑</span><span class="cs-speed-val">' + fmtSpeed(sp.tx) + '</span></td>';
-      html += '<td><span class="cs-cell-label"><%:ACL%>:</span><span class="cs-acl ' + ac + '" data-mac="' + escapeAttr(c.mac) + '" title="<%:Click to toggle%>">' + al + '</span></td>';
+      html += '<td><span class="cs-cell-label">ACL:</span><span class="cs-acl ' + ac + '" data-mac="' + escapeAttr(c.mac) + '" title="点击切换">' + al + '</span></td>';
       
       // Speed limit cell
       var limit = speedLimitData[c.mac];
@@ -849,11 +849,11 @@
     csPost('<%=url("admin/services/clientstatus/reset")%>', {}, function(resp) {
       btn.classList.remove('loading');
       if (resp && resp.ok) {
-        showToast('<%:Client data cleared%>', 'success');
+        showToast('客户端数据已清除', 'success');
         speedData = {};
         csFetch();
       } else {
-        showToast('Error: ' + ((resp && resp.error) || 'request failed'), 'error');
+        showToast('错误: ' + ((resp && resp.error) || '请求失败'), 'error');
       }
     });
   }
