@@ -42,7 +42,7 @@ wget -qO- https://raw.githubusercontent.com/zhete/luci-app-clientstatus/main/ins
 安装完成后请退出登陆web页面，重新进入即可！
 
 特别说明：
-
+重启服务：/etc/init.d/clientstatus restart
 本插件的禁止联网功能只是禁止客户端连接互联网，不能断开wifi连接。
 
 本插件有线客户端的实时网速只显示客户端的互联网出口的网速，不包含局域网内互传的流量。
