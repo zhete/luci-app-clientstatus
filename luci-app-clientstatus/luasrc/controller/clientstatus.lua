@@ -7,15 +7,15 @@ function index()
 
 	entry({"admin", "services", "clientstatus"},
 	      call("action_main"),
-	      _("Client Management"), 60)
+	      _("客户端管理"), 60)
 
 	entry({"admin", "services", "clientstatus", "status"},
 	      template("clientstatus"),
-	      _("Status"), 1)
+	      _("状态"), 1)
 
 	entry({"admin", "services", "clientstatus", "settings"},
 	      cbi("clientstatus/settings"),
-	      _("Settings"), 2)
+	      _("设置"), 2)
 
 	entry({"admin", "services", "clientstatus", "data"},
 	      call("action_data"), nil).leaf = true

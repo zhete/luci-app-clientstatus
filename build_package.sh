@@ -159,12 +159,17 @@ scan_clients() {
             status="online"
             ping -c1 -W1 "$ip" >/dev/null 2>&1 || status="offline"
 
-            # Get duration from state file
+            # Get duration from state file (preserve first seen time)
             duration="0s"
+            first_seen="$now"
             if [ -f "$STATE_FILE" ]; then
-                old_since=$(grep "^${mac}|" "$STATE_FILE" 2>/dev/null | head -1 | cut -d'|' -f3)
-                if [ -n "$old_since" ] && [ "$old_since" -gt 0 ] 2>/dev/null; then
-                    duration=$(format_duration $(( now - old_since )))
+                old_record=$(grep "^${mac}|" "$STATE_FILE" 2>/dev/null | head -1)
+                if [ -n "$old_record" ]; then
+                    old_since=$(echo "$old_record" | cut -d'|' -f3)
+                    if [ -n "$old_since" ] && [ "$old_since" -gt 0 ] 2>/dev/null; then
+                        first_seen="$old_since"
+                        duration=$(format_duration $(( now - first_seen )))
+                    fi
                 fi
             fi
 
@@ -176,11 +181,17 @@ scan_clients() {
 
     mv -f "$tmpfile" "$CLIENTSTATUS_FILE"
 
-    # Update state file with current timestamps
+    # Update state file with preserved first_seen timestamps
     {
         tail -n +8 "${CLIENTSTATUS_FILE}" 2>/dev/null | while read -r mac status duration ip hostname conn; do
             [ -z "$mac" ] && continue
-            echo "$mac|online|${now}|${ip}|${hostname}|Ethernet|99|0"
+            # Get existing first_seen from old state file
+            first_seen="$now"
+            if [ -f "$STATE_FILE" ]; then
+                old_since=$(grep "^${mac}|" "$STATE_FILE" 2>/dev/null | head -1 | cut -d'|' -f3)
+                [ -n "$old_since" ] && [ "$old_since" -gt 0 ] 2>/dev/null && first_seen="$old_since"
+            fi
+            echo "$mac|online|${first_seen}|${ip}|${hostname}|Ethernet|99|0"
         done
     } > "${STATE_FILE}.tmp"
     mv -f "${STATE_FILE}.tmp" "$STATE_FILE"
