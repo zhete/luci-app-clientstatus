@@ -327,33 +327,35 @@ function action_data()
 		else
 			local trimmed = line:match("^%s*(.-)%s*$") or line
 			if trimmed ~= "" then
-				local parts = {}
-				for part in trimmed:gmatch("%S+") do parts[#parts + 1] = part end
-				if #parts >= 6 then
-					local mac, status, duration = parts[1], parts[2], parts[3]
-					local ipv4, hostname, cnt = parts[4] or "", parts[5] or "", parts[6] or ""
-					if valid_mac(mac) and (status == "online" or status == "offline") then
-						if ipv4 == "-" then ipv4 = "" end
-						if hostname == "-" or hostname == "" then hostname = "\226\128\148" end
-						local nct = "Ethernet"
-						if cnt ~= "" and cnt ~= "Ethernet" then nct = cnt end
-						local acl_status = blocked_set[mac:upper()] and "Blocked" or "Allowed"
-						local custom_name = hostname_map[mac:upper()]
-						local display_name = hostname
-						local is_custom = false
-						if custom_name then display_name = custom_name; is_custom = true end
-						result.clients[#result.clients + 1] = {
-							mac = mac,
-							status = status,
-							duration = duration,
-							ipv4 = ipv4,
-							hostname = display_name,
-							orig_hostname = hostname,
-							custom = is_custom,
-							nct = nct,
-							acl = acl_status
-						}
-					end
+				-- Fixed-width format: MAC(17) STATUS(8) DURATION(10) IPv4(16) HOSTNAME(20) CNT(10)
+				local mac = trimmed:sub(1, 17):match("^%s*(.-)%s*$")
+				local status = trimmed:sub(18, 25):match("^%s*(.-)%s*$")
+				local duration = trimmed:sub(26, 35):match("^%s*(.-)%s*$")
+				local ipv4 = trimmed:sub(36, 51):match("^%s*(.-)%s*$")
+				local hostname = trimmed:sub(52, 71):match("^%s*(.-)%s*$")
+				local cnt = trimmed:sub(72):match("^%s*(.-)%s*$")
+				
+				if valid_mac(mac) and (status == "online" or status == "offline") then
+					if ipv4 == "-" then ipv4 = "" end
+					if hostname == "-" or hostname == "" then hostname = "\226\128\148" end
+					local nct = "Ethernet"
+					if cnt ~= "" and cnt ~= "Ethernet" then nct = cnt end
+					local acl_status = blocked_set[mac:upper()] and "Blocked" or "Allowed"
+					local custom_name = hostname_map[mac:upper()]
+					local display_name = hostname
+					local is_custom = false
+					if custom_name then display_name = custom_name; is_custom = true end
+					result.clients[#result.clients + 1] = {
+						mac = mac,
+						status = status,
+						duration = duration,
+						ipv4 = ipv4,
+						hostname = display_name,
+						orig_hostname = hostname,
+						custom = is_custom,
+						nct = nct,
+						acl = acl_status
+					}
 				end
 			end
 		end
