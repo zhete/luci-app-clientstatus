@@ -589,6 +589,9 @@
   }
 
   function sortClients() {
+    if (!Array.isArray(allClients)) {
+      allClients = [];
+    }
     allClients.sort(function(a, b) {
       var va = getVal(a, sortCol), vb = getVal(b, sortCol);
       if (typeof va === 'number') return sortAsc ? va - vb : vb - va;
@@ -818,8 +821,12 @@
     btn.classList.add('loading');
     XHR.get('<%=url("admin/services/clientstatus/data")%>', null, function(x, data) {
       btn.classList.remove('loading');
-      if (data) {
-        allClients = data.clients || [];
+      if (data && Array.isArray(data.clients)) {
+        allClients = data.clients;
+        render();
+      } else if (data && data.clients) {
+        // data.clients exists but not an array, convert to array
+        allClients = [];
         render();
       }
     });

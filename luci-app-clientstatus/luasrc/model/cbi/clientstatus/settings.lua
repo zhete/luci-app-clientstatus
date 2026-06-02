@@ -15,40 +15,40 @@ local function get_interface_list()
     return ifaces
 end
 
-m = Map("clientstatus", translate("Client Management Settings"),
-	translate("Note: Restart the service if the page does not display correctly after changing network settings."))
+m = Map("clientstatus", "客户端管理设置",
+	"注意：修改网络设置后如果页面显示不正常，请重启服务。")
 
-s = m:section(NamedSection, "global", "global", translate("General Settings"))
+s = m:section(NamedSection, "global", "global", "基本设置")
 
-o = s:option(Flag, "enabled", translate("Enable"),
-	translate("Enable or disable the client status monitoring service."))
+o = s:option(Flag, "enabled", "启用",
+	"启用或禁用客户端状态监控服务。")
 o.default = "1"
 o.rmempty = false
 
-o = s:option(Value, "refresh_interval", translate("Refresh Interval (seconds)"),
-	translate("How often to scan all clients. Default: 30 seconds."))
+o = s:option(Value, "refresh_interval", "刷新间隔（秒）",
+	"扫描所有客户端的频率。默认值：30秒。")
 o.default = "30"
 o.datatype = "and(uinteger,min(5))"
 o.rmempty = false
 
-o = s:option(Flag, "enable_speedlimit", translate("Enable Speed Limit"),
-	translate("Enable speed limit functionality for clients."))
+o = s:option(Flag, "enable_speedlimit", "启用限速",
+	"启用客户端限速功能。")
 o.default = "1"
 o.rmempty = false
 
-o = s:option(Flag, "enable_traffic", translate("Enable Traffic Statistics"),
-	translate("Enable traffic statistics collection."))
+o = s:option(Flag, "enable_traffic", "启用流量统计",
+	"启用流量统计功能。")
 o.default = "1"
 o.rmempty = false
 
-o = s:option(Value, "traffic_retention", translate("Traffic Data Retention (days)"),
-	translate("How many days to keep traffic data. Default: 30 days."))
+o = s:option(Value, "traffic_retention", "流量数据保留天数",
+	"流量数据保留的天数。默认值：30天。")
 o.default = "30"
 o.datatype = "and(uinteger,min(1),max(365))"
 o.rmempty = false
 
-o = s:option(ListValue, "lan_iface", translate("LAN Interface"),
-	translate("Network interface to scan for clients. Usually br-lan."))
+o = s:option(ListValue, "lan_iface", "LAN接口",
+	"扫描客户端的网络接口。通常为 br-lan。")
 o.widget = "select"
 
 local ifaces = get_interface_list()

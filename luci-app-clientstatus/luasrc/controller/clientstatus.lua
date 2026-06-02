@@ -6,10 +6,6 @@ function index()
 	end
 
 	entry({"admin", "services", "clientstatus"},
-	      call("action_main"),
-	      _("Client Management"), 60)
-
-	entry({"admin", "services", "clientstatus", "status"},
 	      template("clientstatus"),
 	      _("Status"), 1)
 
