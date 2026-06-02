@@ -17,24 +17,23 @@ end
 
 m = Map("clientstatus", translate("Client Management Settings"),
 	translate("Note: Restart the service if the page does not display correctly after changing network settings."))
-s = m:section(TypedSection, "clientstatus", translate("General Settings"))
-s.anonymous = true
-s.addremove = false
+
+s = m:section(NamedSection, "global", "global", translate("General Settings"))
 
 o = s:option(Flag, "enabled", translate("Enable"),
 	translate("Enable or disable the client status monitoring service."))
-o.default = "0"
+o.default = "1"
 o.rmempty = false
 
-o = s:option(Value, "interval", translate("Refresh Interval (seconds)"),
+o = s:option(Value, "refresh_interval", translate("Refresh Interval (seconds)"),
 	translate("How often to scan all clients. Default: 30 seconds."))
 o.default = "30"
-o.datatype = "and(uinteger,min(20))"
+o.datatype = "and(uinteger,min(5))"
 o.rmempty = false
 
 o = s:option(Flag, "enable_speedlimit", translate("Enable Speed Limit"),
 	translate("Enable speed limit functionality for clients."))
-o.default = "0"
+o.default = "1"
 o.rmempty = false
 
 o = s:option(Flag, "enable_traffic", translate("Enable Traffic Statistics"),
