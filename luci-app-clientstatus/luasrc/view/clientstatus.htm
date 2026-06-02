@@ -465,8 +465,8 @@
           <th data-col="speed_down">↓ <%:SPEED%> <span class="sort-arrow">▼</span></th>
           <th data-col="speed_up">↑ <%:SPEED%> <span class="sort-arrow">▼</span></th>
           <th data-col="acl"><%:ACL%> <span class="sort-arrow">▼</span></th>
-          <th data-col="speedlimit"><%:Speed Limit%> <span class="sort-arrow">▼</span></th>
-          <th data-col="traffic"><%:Total Traffic%> <span class="sort-arrow">▼</span></th>
+          <th data-col="speedlimit">限速 <span class="sort-arrow">▼</span></th>
+          <th data-col="traffic">总流量 <span class="sort-arrow">▼</span></th>
         </tr>
       </thead>
       <tbody id="cs-body">
@@ -666,9 +666,9 @@
   function setSpeedLimit(mac, el) {
     if (el.classList.contains('loading')) return;
     var currentLimit = speedLimitData[mac] || { download: 0, upload: 0 };
-    var download = prompt('<%:Enter download limit (KB/s, 0 for unlimited):%>', currentLimit.download);
+    var download = prompt('输入下载限速（KB/s，0表示不限速）：', currentLimit.download);
     if (download === null) return;
-    var upload = prompt('<%:Enter upload limit (KB/s, 0 for unlimited):%>', currentLimit.upload);
+    var upload = prompt('输入上传限速（KB/s，0表示不限速）：', currentLimit.upload);
     if (upload === null) return;
     
     download = parseInt(download) || 0;
@@ -682,7 +682,7 @@
     }, function(resp) {
       el.classList.remove('loading');
       if (resp && resp.ok) {
-        showToast(mac + ' → <%:Speed limit set%>', 'success');
+        showToast(mac + ' → 限速已设置', 'success');
         csFetchSpeedLimit();
         render();
       } else {
@@ -710,10 +710,10 @@
   }
 
   function csResetTraffic() {
-    if (!confirm('<%:Are you sure you want to reset all traffic statistics?%>')) return;
+    if (!confirm('确定要重置所有流量统计吗？')) return;
     csPost('<%=url("admin/services/clientstatus/reset_traffic")%>', {}, function(resp) {
       if (resp && resp.ok) {
-        showToast('<%:Traffic statistics reset%>', 'success');
+        showToast('流量统计已重置', 'success');
         trafficData = {};
         render();
       } else {
@@ -770,14 +770,14 @@
       
       // Speed limit cell
       var limit = speedLimitData[c.mac];
-      var limitText = limit ? ('↓' + fmtSpeed(limit.download * 1024 / 8) + ' ↑' + fmtSpeed(limit.upload * 1024 / 8)) : '<%:Unlimited%>';
+      var limitText = limit ? ('↓' + fmtSpeed(limit.download * 1024 / 8) + ' ↑' + fmtSpeed(limit.upload * 1024 / 8)) : '不限速';
       var limitClass = limit ? 'limited' : 'unlimited';
-      html += '<td><span class="cs-cell-label"><%:Speed Limit%>:</span><span class="cs-speedlimit ' + limitClass + '" data-mac="' + escapeAttr(c.mac) + '" title="<%:Click to set speed limit%>" style="cursor:pointer;">' + limitText + '</span></td>';
+      html += '<td><span class="cs-cell-label">限速:</span><span class="cs-speedlimit ' + limitClass + '" data-mac="' + escapeAttr(c.mac) + '" title="点击设置限速" style="cursor:pointer;">' + limitText + '</span></td>';
       
       // Traffic statistics cell
       var traffic = trafficData[c.mac];
       var trafficText = traffic ? fmtBytes(traffic.rx + traffic.tx) : '-';
-      html += '<td><span class="cs-cell-label"><%:Total Traffic%>:</span><span class="cs-traffic">' + trafficText + '</span></td>';
+      html += '<td><span class="cs-cell-label">总流量:</span><span class="cs-traffic">' + trafficText + '</span></td>';
       
       html += '</tr>';
       shown++;
