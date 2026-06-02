@@ -751,8 +751,8 @@ int main(void) {
     sigaction(SIGTERM, &sa, NULL);
     sigaction(SIGINT, &sa, NULL);
 
-    g_interval = uci_int("clientstatus.main.interval", DEF_INTERVAL);
-    uci_str("clientstatus.main.lan_iface", g_lan, sizeof g_lan, DEF_LAN);
+    g_interval = uci_int("clientstatus.global.refresh_interval", DEF_INTERVAL);
+    uci_str("clientstatus.global.lan_iface", g_lan, sizeof g_lan, DEF_LAN);
 
     if (init_lan() < 0) {
         fprintf(stderr, "clientstatus: cannot get LAN address for %s\n", g_lan);

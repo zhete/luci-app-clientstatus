@@ -70,7 +70,7 @@ end
 local function get_blocked_set()
 	local uci = require("luci.model.uci").cursor()
 	local set = {}
-	local raw = uci:get("clientstatus", "main", "blocked_mac")
+	local raw = uci:get("clientstatus", "global", "blocked_mac")
 	if type(raw) == "table" then
 		for _, mac in ipairs(raw) do set[mac:upper()] = true end
 	elseif raw then
@@ -382,7 +382,7 @@ function action_toggle_acl()
 		return
 	end
 	mac = mac:upper()
-	local raw = uci:get("clientstatus", "main", "blocked_mac")
+	local raw = uci:get("clientstatus", "global", "blocked_mac")
 	local current = {}
 	if type(raw) == "table" then current = raw elseif raw then current = {raw} end
 	local found = false
@@ -395,8 +395,8 @@ function action_toggle_acl()
 		end
 	end
 	if not found then new_list[#new_list + 1] = mac end
-	uci:delete("clientstatus", "main", "blocked_mac")
-	if #new_list > 0 then uci:set("clientstatus", "main", "blocked_mac", new_list) end
+	uci:delete("clientstatus", "global", "blocked_mac")
+	if #new_list > 0 then uci:set("clientstatus", "global", "blocked_mac", new_list) end
 	uci:save("clientstatus")
 	uci:commit("clientstatus")
 	http.prepare_content("application/json")
