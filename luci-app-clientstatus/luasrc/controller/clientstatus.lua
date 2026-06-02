@@ -6,6 +6,10 @@ function index()
 	end
 
 	entry({"admin", "services", "clientstatus"},
+	      call("action_main"),
+	      _("Client Management"), 60)
+
+	entry({"admin", "services", "clientstatus", "status"},
 	      template("clientstatus"),
 	      _("Status"), 1)
 
@@ -45,14 +49,8 @@ function index()
 end
 
 function action_main()
-	local uci = require("luci.model.uci").cursor()
-	local enabled = uci:get("clientstatus", "main", "enabled") or "0"
-	if enabled == "1" then
-		luci.template.render("clientstatus")
-	else
-		luci.http.redirect(
-			luci.dispatcher.build_url("admin/services/clientstatus/settings"))
-	end
+	luci.http.redirect(
+		luci.dispatcher.build_url("admin/services/clientstatus/status"))
 end
 
 local function valid_mac(mac)
