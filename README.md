@@ -33,11 +33,11 @@ ACL 控制：在界面上直接拦截/放行客户端
 	2.1 直接安装版本所有代码全平台通用，可以直接下载，安装界面输入1即安装，2是卸载。
 在控制台运行代码，即可完成安装！
 
-curl -fsSL https://raw.githubusercontent.com/migee99/luci-app-clientstatus/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/zhete/luci-app-clientstatus/main/install.sh | sh
 
 或者
 
-wget -qO- https://raw.githubusercontent.com/migee99/luci-app-clientstatus/main/install.sh | sh
+wget -qO- https://raw.githubusercontent.com/zhete/luci-app-clientstatus/main/install.sh | sh
 
 安装完成后请退出登陆web页面，重新进入即可！
 
