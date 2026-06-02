@@ -407,9 +407,14 @@ function action_data_fallback(blocked_set, hostname_map)
 			if #parts >= 4 then
 				local mac = parts[2]:upper()
 				if valid_mac(mac) then
+					local hostname = parts[4]
+					-- Handle various "no hostname" cases
+					if hostname == "*" or hostname == "" or hostname == "?" then
+						hostname = ""
+					end
 					dhcp_map[mac] = {
 						ip = parts[3],
-						hostname = parts[4] ~= "*" and parts[4] or ""
+						hostname = hostname
 					}
 				end
 			end
@@ -417,27 +422,51 @@ function action_data_fallback(blocked_set, hostname_map)
 		df:close()
 	end
 
+	-- Read /etc/hosts for additional hostname resolution
+	local hosts_map = {}
+	local hf = io.open("/etc/hosts", "r")
+	if hf then
+		for line in hf:lines() do
+			local ip, name = line:match("^%s*(%d+%.%d+%.%d+%.%d+)%s+(%S+)")
+			if ip and name and name ~= "localhost" then
+				hosts_map[ip] = name
+			end
+		end
+		hf:close()
+	end
+
 	-- Merge: DHCP info + ARP info
 	local merged = {}
 	for mac, info in pairs(dhcp_map) do merged[mac] = info end
 	for mac, info in pairs(arp_clients) do
-		if not merged[mac] then merged[mac] = { ip = info.ip, hostname = "" } end
+		if not merged[mac] then
+			-- Try to get hostname from /etc/hosts
+			local hostname = hosts_map[info.ip] or ""
+			merged[mac] = { ip = info.ip, hostname = hostname }
+		end
 	end
 
 	-- Build client list
 	for mac, info in pairs(merged) do
 		local hostname = info.hostname or ""
-		if hostname == "" then hostname = "\226\128\148" end
+		-- Use custom name if available
 		local acl_status = blocked_set[mac] and "Blocked" or "Allowed"
 		local custom_name = hostname_map[mac]
 		local display_name = hostname
 		local is_custom = false
-		if custom_name then display_name = custom_name; is_custom = true end
+		if custom_name then
+			display_name = custom_name
+			is_custom = true
+		elseif hostname == "" then
+			display_name = "—"
+		end
 
 		-- Determine connection type
 		local nct = "Ethernet"
 		local device = arp_clients[mac] and arp_clients[mac].device or ""
-		if device ~= "" and device ~= "br-lan" then nct = device end
+		if device ~= "" and device ~= "br-lan" then
+			nct = device
+		end
 
 		result.clients[#result.clients + 1] = {
 			mac = mac,
@@ -445,7 +474,7 @@ function action_data_fallback(blocked_set, hostname_map)
 			duration = "-",
 			ipv4 = info.ip or "",
 			hostname = display_name,
-			orig_hostname = hostname,
+			orig_hostname = hostname ~= "" and hostname or "—",
 			custom = is_custom,
 			nct = nct,
 			acl = acl_status
